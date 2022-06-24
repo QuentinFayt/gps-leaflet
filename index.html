@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GPS</title>
+    <link crossorigin="" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" rel="stylesheet"/>
+    <script crossorigin="" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <link href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" rel="stylesheet"/>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+    <link href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" rel="stylesheet"/>
+    <link href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" rel="stylesheet"/>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <style>
+        h1 {
+            text-align : center;
+        }
+
+        #gps {
+            height : 80vh;
+            border : 1px solid black;
+            width  : 80vw;
+            margin : 0 auto;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>GPS:</h1>
+    <section id="gps">
+
+    </section>
+</main>
+<script>
+    navigator.geolocation.getCurrentPosition((pos) => {
+        let otherDist = {
+            lat : 50.82650039365293,
+            long: 4.33866220130695
+        }
+        const map     = L.map('gps').setView([(pos.coords.latitude + otherDist.lat) / 2, (pos.coords.longitude + otherDist.long) / 2], 15);
+        let yourPos   = L.marker([pos.coords.latitude, pos.coords.longitude]);
+        let cf2m      = L.marker([otherDist.lat, otherDist.long]);
+        let markers   = [yourPos, cf2m];
+        markers.forEach((el) => {
+            el.addEventListener("mouseover", () => {
+                el.openPopup()
+            })
+        })
+        L.Routing.control({
+            waypoints  : [
+                yourPos._latlng,
+                cf2m._latlng
+            ],
+            lineOptions: {
+                addWaypoints: false
+            }
+        }).addTo(map);
+        yourPos.addTo(map).bindPopup("Votre position").openPopup();
+        cf2m.addTo(map).bindPopup("Centre de formation 2000")
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }
+        ).addTo(map);
+        var markersG = L.markerClusterGroup();
+        markersG.addLayer(cf2m);
+        map.addLayer(markersG);
+    }, () => {
+    }, {
+        enableHighAccuracy: true,
+        timeout           : 3000,
+        maximumAge        : 0
+    });
+</script>
+</body>
+</html>

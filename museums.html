@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Museums</title>
+    <link crossorigin="" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" rel="stylesheet"/>
+    <script crossorigin="" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <link href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" rel="stylesheet"/>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+    <link href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" rel="stylesheet"/>
+    <link href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" rel="stylesheet"/>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <style>
+        h1 {
+            text-align : center;
+        }
+
+        #gps {
+            height : 50vh;
+            border : 1px solid black;
+            width  : 50vw;
+            margin : 0 auto;
+        }
+
+        form {
+            text-align : center;
+            width      : 50vw;
+            margin     : 0 auto;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Museums:</h1>
+    <section id="gps">
+
+    </section>
+    <form>
+
+        <h2>Sélectionez une localité:</h2>
+        <select>
+            <option disabled selected>--Liste des localités--</option>
+            <option value="BRUXELLES">Bruxelles</option>
+            <option value="LIEGE">Liege</option>
+            <option value="TOURNAI">Tournai</option>
+            <option value="NAMUR">Namur</option>
+            <option value="LA+LOUVIERE">La louvière</option>
+            <option value="CHARLEROI">Charleroi</option>
+        </select>
+    </form>
+</main>
+<script>
+    const map = L.map('gps');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }
+    ).addTo(map);
+
+    navigator.geolocation.getCurrentPosition((pos) => {
+        map.setView([pos.coords.latitude, pos.coords.longitude], 15)
+    }, () => {
+    }, {
+        enableHighAccuracy: true,
+        timeout           : 3000,
+        maximumAge        : 0
+    });
+
+    let options = document.querySelector("main form select");
+    let markers = L.markerClusterGroup();
+    options.addEventListener("change", () => {
+        markers.clearLayers();
+        let markerG = [];
+        let url     = "https://www.odwb.be/api/records/1.0/search/?dataset=adresses-des-musees-reconnus-en-communaute-francaise&q=&facet=localite&refine.localite=" + options.value;
+
+        fetch(url).then((e) => {
+            e.json().then((json) => {
+                json.records.forEach((place) => {
+                        markers.addLayer(L.marker([place.fields.localisation[0], place.fields.localisation[1]]).bindPopup(
+                            `
+                            <h3>Nom : ${place.fields.denomination}</h3>
+                            <p>web : <a href="${place.fields.site_web}" target="_blank">${place.fields.site_web}</a></p>
+                            <p>mail : <a href="mailto:${place.fields.courriel}" target="_blank">${place.fields.courriel}</a></p>
+                            <p>téléphone : <a href="tel:${place.fields.telephone}" target="_blank">${place.fields.telephone}</a></p>
+                            <p>addresse : ${place.fields.adresse}, ${place.fields.localite}</p>
+                            `
+                        ));
+                        markerG.push(L.marker([place.fields.localisation[0], place.fields.localisation[1]]));
+                    }
+                )
+                let group = new L.featureGroup(markerG);
+                map.fitBounds(group.getBounds().pad(0.1));
+                map.addLayer(markers);
+            })
+        });
+    })
+</script>
+</body>
+</html>
